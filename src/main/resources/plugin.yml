@@ -4,7 +4,7 @@ name: Slaparoo
 
 author: xvojta
 
-main: com.javaminecraft.Slaparoo
+main: cz.artin.hackers.Slaparoo
 
 commands:
     sl:

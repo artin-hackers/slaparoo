@@ -1,6 +1,8 @@
 package cz.artin.hackers;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
@@ -17,6 +19,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -73,6 +76,7 @@ public class Slaparoo extends JavaPlugin
     Player me;
     Server server = getServer();
     ConsoleCommandSender console = server.getConsoleSender();
+    List<String> slaparooPlayers = new ArrayList<>();
 
     
     @Override
@@ -175,16 +179,22 @@ public class Slaparoo extends JavaPlugin
             event.setLine(0, "Slaparoo COOKIE");
             event.setLine(3, "<left click>");
         }
-    }        
+    }
+
+
     
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn (PlayerRespawnEvent event) {
+        LOG.info(event.getPlayer().getWorld().getName());
         if(event.getRespawnLocation().getWorld().getName().equals(SLAPAROO_WORLD_NAME)) {
             if(!gameIsRuning){
                 event.setRespawnLocation(Bukkit.getWorld(LOBBY_WORLD_NAME).getSpawnLocation());
             } else {
                 dejSusenkuHraci(event.getPlayer());
             }
+        } else if(slaparooPlayers.contains(event.getPlayer().getName())) {
+            LOG.info(event.getRespawnLocation().toString());
+            event.setRespawnLocation(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
         }
     }
     
@@ -227,14 +237,16 @@ public class Slaparoo extends JavaPlugin
             }    
         }
         
-        // player joined Slaparoo        
+        // player joined Slaparoo
         if(world.getName().equals(SLAPAROO_WORLD_NAME)) {
+            slaparooPlayers.add(event.getPlayer().getName());
+
             if(sign != null) {
                 sign.setLine(1, activePlayerCount+"/"+MAX_PLAYER_COUNT);
                 sign.update();                
             }
             for (Player pl:world.getPlayers()) {
-                pl.sendMessage("There is " + activePlayerCount + " players in the game");            
+                pl.sendMessage("There is " + activePlayerCount + " slaparooPlayers in the game");
             }
             if(activePlayerCount >= MIN_PLAYER_COUNT && !gameIsRuning) {
                 gameIsRuning = true;
@@ -306,6 +318,7 @@ public class Slaparoo extends JavaPlugin
 
     private void GameOver(Player winner) {
         World world = winner.getWorld();
+        slaparooPlayers.clear();
         for (Player pl:world.getPlayers()) {
             pl.getInventory().remove(Material.COOKIE);
             if(world.getPlayers().size() <= 1 && gameIsRuning) {
@@ -366,7 +379,7 @@ class SlaparooStarter implements Runnable {
     List<Player> players;
     World world;
     Slaparoo slaparoo;
-    public static int START_COUNTDOWN = 20; //pisu presne co me tatka diktuje
+    public static int START_COUNTDOWN = 20;
 
     SlaparooStarter(World world, Slaparoo slaparoo, List<Player> players) {
         this.slaparoo = slaparoo;
