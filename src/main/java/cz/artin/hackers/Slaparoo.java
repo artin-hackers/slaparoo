@@ -38,6 +38,8 @@ import org.bukkit.scoreboard.Team;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+
+import static cz.artin.hackers.Slaparoo.SLAPAROO_WORLD_NAME;
 import static java.lang.Thread.sleep;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.block.SignChangeEvent;
@@ -61,7 +63,7 @@ public class Slaparoo extends JavaPlugin
     // config values
     private static String LOBBY_WORLD_NAME;
     private static int WINNER_SCORE = 20;
-    private static String SLAPAROO_WORLD_NAME;
+    public static String SLAPAROO_WORLD_NAME;
     public static int MAX_PLAYER_COUNT = 10;
     public static int MIN_PLAYER_COUNT = 2;
     public static int KNOCKBACK_LEVEL = 3;
@@ -69,6 +71,7 @@ public class Slaparoo extends JavaPlugin
     boolean on = false;
     Sign sign;
     boolean gameIsRuning = false;
+    boolean canPlayerJoin = true;
     HashMap<Player, Player> lastdamager = new HashMap<>();
     Scoreboard board;
     Objective objective;
@@ -76,7 +79,7 @@ public class Slaparoo extends JavaPlugin
     Player me;
     Server server = getServer();
     ConsoleCommandSender console = server.getConsoleSender();
-    List<String> slaparooPlayers = new ArrayList<>();
+    public List<Player> slaparooPlayers = new ArrayList<>();
 
     
     @Override
@@ -158,14 +161,21 @@ public class Slaparoo extends JavaPlugin
     private void dejSusenkuHraci(Player pl) {
         ItemStack cookie = new ItemStack(Material.COOKIE);
         cookie.addUnsafeEnchantment(Enchantment.KNOCKBACK, KNOCKBACK_LEVEL);
-        pl.getInventory().addItem(cookie);        
+        pl.getInventory().setItemInMainHand(cookie);
     }
     
-    public void gameStart (List<Player> players, World world) {
+    public void gameStart (World world) {
+        List<Player> players =  world.getPlayers();
+
         if(sign != null) {
             sign.setLine(2, "GAME RUN");
             sign.update();            
         }
+
+        canPlayerJoin = false;
+        craeteScoreBoard(world);
+
+
         for (Player pl:players) {
             dejSusenkuHraci(pl);
             TitleAPI.sendTitle(pl, 1*20, 2*20, 1*20, "GAME STARTED", "Kick them all!");
@@ -185,16 +195,15 @@ public class Slaparoo extends JavaPlugin
     
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn (PlayerRespawnEvent event) {
-        LOG.info(event.getPlayer().getWorld().getName());
         if(event.getRespawnLocation().getWorld().getName().equals(SLAPAROO_WORLD_NAME)) {
             if(!gameIsRuning){
                 event.setRespawnLocation(Bukkit.getWorld(LOBBY_WORLD_NAME).getSpawnLocation());
             } else {
                 dejSusenkuHraci(event.getPlayer());
             }
-        } else if(slaparooPlayers.contains(event.getPlayer().getName())) {
-            LOG.info(event.getRespawnLocation().toString());
+        } else if(slaparooPlayers.contains(event.getPlayer())) {
             event.setRespawnLocation(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
+            dejSusenkuHraci(event.getPlayer());
         }
     }
     
@@ -239,7 +248,7 @@ public class Slaparoo extends JavaPlugin
         
         // player joined Slaparoo
         if(world.getName().equals(SLAPAROO_WORLD_NAME)) {
-            slaparooPlayers.add(event.getPlayer().getName());
+            slaparooPlayers.add(event.getPlayer());
 
             if(sign != null) {
                 sign.setLine(1, activePlayerCount+"/"+MAX_PLAYER_COUNT);
@@ -250,9 +259,8 @@ public class Slaparoo extends JavaPlugin
             }
             if(activePlayerCount >= MIN_PLAYER_COUNT && !gameIsRuning) {
                 gameIsRuning = true;
-                Thread slaparooStarterThread = new Thread(new SlaparooStarter(world, this, world.getPlayers()));
+                Thread slaparooStarterThread = new Thread(new SlaparooStarter(world, this, slaparooPlayers));
                 slaparooStarterThread.start();
-                craeteScoreBoard(world);
             }
         }
     }
@@ -292,10 +300,12 @@ public class Slaparoo extends JavaPlugin
            console.sendMessage(ChatColor.RED + "World " + SLAPAROO_WORLD_NAME + " does not exist. Check slaparoo config file.");
         } else {
             int playerCount = world.getPlayers().size();        
-            if(playerCount < MAX_PLAYER_COUNT && !gameIsRuning) {
+            if(playerCount < MAX_PLAYER_COUNT && canPlayerJoin) {
                pl.teleport(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
                return true;
-           }
+           } else {
+                pl.sendMessage("You can't join, because game is running");
+            }
         }   
         return false;
     }
@@ -319,6 +329,8 @@ public class Slaparoo extends JavaPlugin
     private void GameOver(Player winner) {
         World world = winner.getWorld();
         slaparooPlayers.clear();
+        gameIsRuning = false;
+        canPlayerJoin = true;
         for (Player pl:world.getPlayers()) {
             pl.getInventory().remove(Material.COOKIE);
             if(world.getPlayers().size() <= 1 && gameIsRuning) {
@@ -332,7 +344,6 @@ public class Slaparoo extends JavaPlugin
         if(sign != null) {
             sign.setLine(2, " ");
             sign.update();
-            gameIsRuning = false;
         }
     }
 
@@ -367,7 +378,7 @@ public class Slaparoo extends JavaPlugin
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         World world = Bukkit.getWorld(SLAPAROO_WORLD_NAME);
-        int activePlayerCount = world.getPlayers().size();
+        int activePlayerCount = world.getPlayers().size() - 1; //odečteme jedničku protože hráč který se odpojil je ve chvíli kdy se spustí event ještě ve hře
         if(activePlayerCount <= 1 && gameIsRuning){
             GameOver(event.getPlayer());
         }
@@ -380,6 +391,7 @@ class SlaparooStarter implements Runnable {
     World world;
     Slaparoo slaparoo;
     public static int START_COUNTDOWN = 20;
+
 
     SlaparooStarter(World world, Slaparoo slaparoo, List<Player> players) {
         this.slaparoo = slaparoo;
@@ -407,10 +419,27 @@ class SlaparooStarter implements Runnable {
             }
 
           }
-          slaparoo.gameStart(players, world);
+          slaparoo.gameStart(world);
         } catch (InterruptedException e) {
           // doresit !!!  
         }
     }
+
+    @EventHandler
+    public void onPlayerChangedWorld (PlayerChangedWorldEvent event) {
+        Player newPlayer = event.getPlayer();
+        World world = newPlayer.getWorld();
+        int activePlayerCount = world.getPlayers().size();
+
+        // player has left
+        if(event.getFrom().getName().equals(SLAPAROO_WORLD_NAME)){
+
+        }
+
+        // player joined Slaparoo
+        if(world.getName().equals(SLAPAROO_WORLD_NAME)) {
+        }
+    }
+
     
 }
