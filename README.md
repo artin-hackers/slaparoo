@@ -2,13 +2,14 @@
 
 ## Tasks:
 - [ ] In-game message that config is wrong
-- [ ] Indestructible arena (OPs can destroy the arena now)
+- [x] Indestructible arena (OPs can destroy the arena now)
+- [x] No need for food (disable hunger)
 
 ## Bugs:
 - [x] Third+ player does not receive the cookie
 - [x] Third+ player does not have the score-board
-- [ ] Wrong player is announced as a winner
-- [ ] When rejoining the arena, player has cookie in lobby
+- [x] Wrong player is announced as a winner
+- [x] When rejoining the arena, player has cookie in lobby
 
 ## Notes
 
