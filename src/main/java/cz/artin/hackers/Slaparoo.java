@@ -2,15 +2,11 @@ package cz.artin.hackers;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Server;
-import org.bukkit.World;
+
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.command.Command;
@@ -25,10 +21,12 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
@@ -41,13 +39,12 @@ import java.io.InputStreamReader;
 
 import static cz.artin.hackers.Slaparoo.SLAPAROO_WORLD_NAME;
 import static java.lang.Thread.sleep;
-import org.bukkit.event.player.PlayerInteractEvent;
+
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+
 import java.net.URL;
-import org.bukkit.ChatColor;
+
 import org.bukkit.command.ConsoleCommandSender;
 
 
@@ -182,6 +179,18 @@ public class Slaparoo extends JavaPlugin
             pl.sendMessage("You must get " + WINNER_SCORE + " points to win.");
         }
     }
+
+    public void addEffects(Player pl) {
+        pl.setGameMode(GameMode.ADVENTURE);
+        pl.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 240000, 1 ));
+        pl.addPotionEffect(new PotionEffect(PotionEffectType.SATURATION, 240000, 1 ));
+    }
+
+    public void clearEffect(Player pl) {
+        pl.setGameMode(GameMode.SURVIVAL);
+        pl.removePotionEffect(PotionEffectType.REGENERATION);
+        pl.removePotionEffect(PotionEffectType.SATURATION);
+    }
     
     @EventHandler
     public void onSignChange (SignChangeEvent event) {
@@ -199,16 +208,19 @@ public class Slaparoo extends JavaPlugin
             if(!gameIsRuning){
                 event.setRespawnLocation(Bukkit.getWorld(LOBBY_WORLD_NAME).getSpawnLocation());
             } else {
-                dejSusenkuHraci(event.getPlayer());
             }
         } else if(slaparooPlayers.contains(event.getPlayer())) {
             event.setRespawnLocation(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
-            dejSusenkuHraci(event.getPlayer());
         }
     }
     
-    
-
+    @EventHandler
+    public void onPlayerJoinEvent(PlayerJoinEvent event) {
+        if (slaparooPlayers.contains(event.getPlayer())) {
+            addEffects(event.getPlayer());
+            dejSusenkuHraci(event.getPlayer());
+        }
+    }
     
     @EventHandler
     public void onPlayerInteract (PlayerInteractEvent event) {
@@ -233,6 +245,9 @@ public class Slaparoo extends JavaPlugin
         // player has left
         if(event.getFrom().getName().equals(SLAPAROO_WORLD_NAME)){
             int pocetHracu = event.getFrom().getPlayers().size();
+            if (gameIsRuning) {
+                addEffects(event.getPlayer());
+            }
             if(board != null){
                 board.resetScores(newPlayer);
             }
@@ -245,10 +260,11 @@ public class Slaparoo extends JavaPlugin
                 return;
             }    
         }
-        
+
         // player joined Slaparoo
         if(world.getName().equals(SLAPAROO_WORLD_NAME)) {
             slaparooPlayers.add(event.getPlayer());
+            addEffects(event.getPlayer());
 
             if(sign != null) {
                 sign.setLine(1, activePlayerCount+"/"+MAX_PLAYER_COUNT);
@@ -267,12 +283,18 @@ public class Slaparoo extends JavaPlugin
     
     @EventHandler
     public void onEntityDamageByEntityEvent  (EntityDamageByEntityEvent event) {
-       
         if ((event.getEntity() instanceof Player) && (event.getDamager() instanceof Player)) {
             lastdamager.put((Player) event.getEntity(),  (Player) event.getDamager());            
         }
     }
 
+    @EventHandler
+    public void onEntityDamage (EntityDamageEvent event) {
+        if ((event.getEntity() instanceof Player) && event.getCause().equals(DamageCause.VOID)) {
+            LOG.info("Void damage!!!!");
+            ((Player) event.getEntity()).setHealth(0.0);
+        }
+    }
 
 
     @EventHandler
@@ -297,6 +319,11 @@ public class Slaparoo extends JavaPlugin
     public boolean playerJoin(Player pl){
         World world = Bukkit.getWorld(SLAPAROO_WORLD_NAME);
         if(world == null) {
+            if (pl.isOp()) {
+                pl.sendMessage("World " + SLAPAROO_WORLD_NAME + " does not exist. Check slaparoo config file.");
+            } else {
+                pl.sendMessage("Game configuration is wrong. Please contact server admin");
+            }
            console.sendMessage(ChatColor.RED + "World " + SLAPAROO_WORLD_NAME + " does not exist. Check slaparoo config file.");
         } else {
             int playerCount = world.getPlayers().size();        
@@ -332,6 +359,7 @@ public class Slaparoo extends JavaPlugin
         gameIsRuning = false;
         canPlayerJoin = true;
         for (Player pl:world.getPlayers()) {
+            clearEffect(pl);
             pl.getInventory().remove(Material.COOKIE);
             if(world.getPlayers().size() <= 1 && gameIsRuning) {
                 TitleAPI.sendTitle(pl, 1*20, 3*20, 1*20, "Your opponents left the game", "");                

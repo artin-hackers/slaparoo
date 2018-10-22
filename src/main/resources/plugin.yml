@@ -14,4 +14,4 @@ commands:
         description: slaparoo sign inserting mode on/off.
         usage: /<command> [on | off ]
 
-version: 2.2
+version: 2.5
