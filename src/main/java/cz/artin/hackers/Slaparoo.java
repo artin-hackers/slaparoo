@@ -37,7 +37,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import static cz.artin.hackers.Slaparoo.SLAPAROO_WORLD_NAME;
+//import static cz.artin.hackers.Slaparoo.SLAPAROO_WORLD_NAME;
 import static java.lang.Thread.sleep;
 
 import org.bukkit.event.block.SignChangeEvent;
@@ -174,6 +174,7 @@ public class Slaparoo extends JavaPlugin
 
 
         for (Player pl:players) {
+            LOG.info("susenka6");
             dejSusenkuHraci(pl);
             TitleAPI.sendTitle(pl, 1*20, 2*20, 1*20, "GAME STARTED", "Kick them all!");
             pl.sendMessage("You must get " + WINNER_SCORE + " points to win.");
@@ -207,21 +208,15 @@ public class Slaparoo extends JavaPlugin
         if(event.getRespawnLocation().getWorld().getName().equals(SLAPAROO_WORLD_NAME)) {
             if(!gameIsRuning){
                 event.setRespawnLocation(Bukkit.getWorld(LOBBY_WORLD_NAME).getSpawnLocation());
-            } else {
-            }
         } else if(slaparooPlayers.contains(event.getPlayer())) {
+            LOG.info("susenka2");
             event.setRespawnLocation(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
-        }
-    }
-    
-    @EventHandler
-    public void onPlayerJoinEvent(PlayerJoinEvent event) {
-        if (slaparooPlayers.contains(event.getPlayer())) {
-            addEffects(event.getPlayer());
+            LOG.info("susenka3");
             dejSusenkuHraci(event.getPlayer());
+            addEffects(event.getPlayer());
         }
     }
-    
+
     @EventHandler
     public void onPlayerInteract (PlayerInteractEvent event) {
         if(event.getAction() == Action.LEFT_CLICK_BLOCK) {
@@ -245,9 +240,6 @@ public class Slaparoo extends JavaPlugin
         // player has left
         if(event.getFrom().getName().equals(SLAPAROO_WORLD_NAME)){
             int pocetHracu = event.getFrom().getPlayers().size();
-            if (gameIsRuning) {
-                addEffects(event.getPlayer());
-            }
             if(board != null){
                 board.resetScores(newPlayer);
             }
@@ -264,7 +256,6 @@ public class Slaparoo extends JavaPlugin
         // player joined Slaparoo
         if(world.getName().equals(SLAPAROO_WORLD_NAME)) {
             slaparooPlayers.add(event.getPlayer());
-            addEffects(event.getPlayer());
 
             if(sign != null) {
                 sign.setLine(1, activePlayerCount+"/"+MAX_PLAYER_COUNT);
@@ -434,7 +425,6 @@ class SlaparooStarter implements Runnable {
         try {
           int pocetHrajicichHracu = world.getPlayers().size();
           for(int i = 0; i<START_COUNTDOWN; i++) {
-            Slaparoo.LOG.info("FOR " + i);
             sleep(1000);
             if(pocetHrajicichHracu < Slaparoo.MIN_PLAYER_COUNT) {
                 return;
@@ -450,22 +440,6 @@ class SlaparooStarter implements Runnable {
           slaparoo.gameStart(world);
         } catch (InterruptedException e) {
           // doresit !!!  
-        }
-    }
-
-    @EventHandler
-    public void onPlayerChangedWorld (PlayerChangedWorldEvent event) {
-        Player newPlayer = event.getPlayer();
-        World world = newPlayer.getWorld();
-        int activePlayerCount = world.getPlayers().size();
-
-        // player has left
-        if(event.getFrom().getName().equals(SLAPAROO_WORLD_NAME)){
-
-        }
-
-        // player joined Slaparoo
-        if(world.getName().equals(SLAPAROO_WORLD_NAME)) {
         }
     }
 
