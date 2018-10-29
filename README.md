@@ -19,7 +19,7 @@ Edit the file `*\server\ops.json`
 [
   {
     "uuid": "xxx",
-    "name": "Arcifrajer",
+    "name": "xvojta",
     "level": 4,
     "bypassesPlayerLimit": false
   }
