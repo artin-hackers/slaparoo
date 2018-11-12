@@ -42,7 +42,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 //import static cz.artin.hackers.Slaparoo.SLAPAROO_WORLD_NAME;
-//import static java.lang.Thread.sleep;
+import static java.lang.Thread.sleep;
 
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -54,21 +54,22 @@ import org.bukkit.command.ConsoleCommandSender;
 
 
 
-public class Slaparoo extends JavaPlugin 
-    implements Listener {
+public class SlaparooArena extends JavaPlugin
+        implements Listener {
 
-    public static final Logger LOG = Logger.getLogger("Minecraft"); 
+    public static final Logger LOG = Logger.getLogger("Minecraft");
 
-    private static final String SLAPAROO_SIGN = "slaparooSign";    
-    
+    private static final String SLAPAROO_SIGN = "slaparooSign";
+
     // config values
     private static String LOBBY_WORLD_NAME;
+    private static String ARENA_NAME;
     private static int WINNER_SCORE = 20;
     public static String SLAPAROO_WORLD_NAME;
     public static int MAX_PLAYER_COUNT = 10;
     public static int MIN_PLAYER_COUNT = 2;
     public static int KNOCKBACK_LEVEL = 3;
-    
+
     boolean on = false;
     Sign sign;
     boolean gameIsRuning = false;
@@ -80,64 +81,83 @@ public class Slaparoo extends JavaPlugin
     Player me;
     Server server = getServer();
     ConsoleCommandSender console = server.getConsoleSender();
+
     public List<Player> slaparooPlayers = new ArrayList<>();
 
-    
+    public SlaparooArena(String arenaName) {
+        ARENA_NAME = arenaName;
+        console.sendMessage("aaa");
+
+        if (!new File(getDataFolder(),ARENA_NAME).exists()) {
+            new File(getDataFolder(),ARENA_NAME);
+            saveDefaultConfig();
+        } else if(!new File(getDataFolder().getPath() + "/config.yml").exists()) {
+            saveDefaultConfig();
+        }
+        console.sendMessage("bbbb");
+
+        FileConfiguration config = getConfig();
+        LOBBY_WORLD_NAME = config.getString("lobby-world-name");
+        SLAPAROO_WORLD_NAME = config.getString("slaparoo-world-name");
+        WINNER_SCORE = config.getInt("winner-score");
+        MIN_PLAYER_COUNT = config.getInt("minimal-player");
+        MAX_PLAYER_COUNT = config.getInt("maximal-player");
+        KNOCKBACK_LEVEL = config.getInt("knockback-level");
+    }
+
+
     @Override
-    public boolean onCommand(CommandSender sender, 
-        Command command, String label, String[] arguments) {
-         
+    public boolean onCommand(CommandSender sender,
+                             Command command, String label, String[] arguments) {
+
         me = (Player) sender;
         World world = me.getWorld();
         Location spot = me.getLocation();
-        
-         
-            if (label.equalsIgnoreCase("sl")) { 
-                if (sender instanceof Player && me.isOp()) {
-                    if (arguments.length > 1) {
-                        if (arguments[0].equals("join")) {
-                            if (server.getPlayer(arguments[1]) != null/* &&
-                                    playerJoin(server.getPlayer(arguments[1]))*/)
-                            {                                
-                                me.sendMessage(arguments[1] + " joined Slaparoo!");
-                            } else {
-                                me.sendMessage(arguments[1] + " did NOT joined Slaparoo!");
-                            }
-                            return true;
-                        }
-                    }
-                } else {
-                    me.sendMessage("You don't have permissions to this command!");
-                }
-            }
-            if (label.equalsIgnoreCase("slaparoosign")) { 
-                if (sender instanceof Player && me.isOp()) {
-                    if (arguments.length > 0) {
-                        if (arguments[0].equals("on")) {
-                            signOn = true;
-                            me.sendMessage("slaparoo sign mode on !");
+
+
+        if (label.equalsIgnoreCase("sl")) {
+            if (sender instanceof Player && me.isOp()) {
+                if (arguments.length > 1) {
+                    if (arguments[0].equals("join")) {
+                        if (server.getPlayer(arguments[1]) != null &&
+                                playerJoin(server.getPlayer(arguments[1])))
+                        {
+                            me.sendMessage(arguments[1] + " joined Slaparoo!");
                         } else {
-                            signOn = false;
-                            me.sendMessage("slaparoo sign mode off !");
+                            me.sendMessage(arguments[1] + " did NOT joined Slaparoo!");
                         }
                         return true;
                     }
-                } else {
-                    me.sendMessage("You don't have permissions to this command!");
                 }
+            } else {
+                me.sendMessage("You don't have permissions to this command!");
             }
+        }
+        if (label.equalsIgnoreCase("slaparoosign")) {
+            if (sender instanceof Player && me.isOp()) {
+                if (arguments.length > 0) {
+                    if (arguments[0].equals("on")) {
+                        signOn = true;
+                        me.sendMessage("slaparoo sign mode on !");
+                    } else {
+                        signOn = false;
+                        me.sendMessage("slaparoo sign mode off !");
+                    }
+                    return true;
+                }
+            } else {
+                me.sendMessage("You don't have permissions to this command!");
+            }
+        }
         return false;
     }
 
-      // make this class listen to events
-    @Override
+    // make this class listen to events
+/*    @Override
     public void onEnable() {
         Server server = getServer();
         PluginManager manager = server.getPluginManager();
         manager.registerEvents(this, this);
-        console.sendMessage("abc");
-        SlaparooArena capitan = new SlaparooArena("Capitan_America");
-        console.sendMessage("def");
 
         console.sendMessage(ChatColor.GREEN + "          +---------+");
         console.sendMessage(ChatColor.GREEN + "          |" + ChatColor.AQUA + " Slaproo " + ChatColor.GREEN + "|");
@@ -150,32 +170,19 @@ public class Slaparoo extends JavaPlugin
             console.sendMessage(ChatColor.RED + "+--------------------------------------------------------------------------------------+");
         }
     }
-        /*
-        if (!new File(getDataFolder(),"config.yml").exists()) {
-          saveDefaultConfig();
-            
-        }
-        FileConfiguration config = getConfig();
-        LOBBY_WORLD_NAME = config.getString("lobby-world-name");
-        SLAPAROO_WORLD_NAME = config.getString("slaparoo-world-name");
-        WINNER_SCORE = config.getInt("winner-score");
-        MIN_PLAYER_COUNT = config.getInt("minimal-player");
-        MAX_PLAYER_COUNT = config.getInt("maximal-player");
-        KNOCKBACK_LEVEL = config.getInt("knockback-level");
-    }
-    
+*/
     private void dejSusenkuHraci(Player pl) {
         ItemStack cookie = new ItemStack(Material.COOKIE);
         cookie.addUnsafeEnchantment(Enchantment.KNOCKBACK, KNOCKBACK_LEVEL);
         pl.getInventory().setItemInMainHand(cookie);
     }
-    
+
     public void gameStart (World world) {
         List<Player> players =  world.getPlayers();
 
         if(sign != null) {
             sign.setLine(2, "GAME RUN");
-            sign.update();            
+            sign.update();
         }
 
         canPlayerJoin = false;
@@ -209,7 +216,7 @@ public class Slaparoo extends JavaPlugin
         pl.removePotionEffect(PotionEffectType.REGENERATION);
         pl.removePotionEffect(PotionEffectType.SATURATION);
     }
-    
+
     @EventHandler
     public void onSignChange (SignChangeEvent event) {
         if(signOn && event.getPlayer().equals(me)) {
@@ -219,7 +226,7 @@ public class Slaparoo extends JavaPlugin
     }
 
 
-    
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn (PlayerRespawnEvent event) {
         if(event.getRespawnLocation().getWorld().getName().equals(SLAPAROO_WORLD_NAME)) {
@@ -243,12 +250,12 @@ public class Slaparoo extends JavaPlugin
                 sign = (Sign) block.getState();
                 if(sign.getLine(0).equals("Slaparoo COOKIE")) {
                     playerJoin(event.getPlayer());
-               }
+                }
             }
         }
-    }        
+    }
 
-    
+
     @EventHandler
     public void onPlayerChangedWorld (PlayerChangedWorldEvent event) {
         Player newPlayer = event.getPlayer();
@@ -263,12 +270,12 @@ public class Slaparoo extends JavaPlugin
             }
             if(sign!=null){
                 sign.setLine(1,pocetHracu +"/"+MAX_PLAYER_COUNT);
-                sign.update();                
+                sign.update();
             }
             if(pocetHracu <= 1 && gameIsRuning){
                 GameOver(newPlayer);
                 return;
-            }    
+            }
         }
 
         // player joined Slaparoo
@@ -277,7 +284,7 @@ public class Slaparoo extends JavaPlugin
 
             if(sign != null) {
                 sign.setLine(1, activePlayerCount+"/"+MAX_PLAYER_COUNT);
-                sign.update();                
+                sign.update();
             }
             for (Player pl:world.getPlayers()) {
                 pl.sendMessage("There is " + activePlayerCount + " slaparooPlayers in the game");
@@ -289,11 +296,11 @@ public class Slaparoo extends JavaPlugin
             }
         }
     }
-    
+
     @EventHandler
     public void onEntityDamageByEntityEvent  (EntityDamageByEntityEvent event) {
         if ((event.getEntity() instanceof Player) && (event.getDamager() instanceof Player)) {
-            lastdamager.put((Player) event.getEntity(),  (Player) event.getDamager());            
+            lastdamager.put((Player) event.getEntity(),  (Player) event.getDamager());
         }
     }
 
@@ -311,8 +318,8 @@ public class Slaparoo extends JavaPlugin
         Player killedPlayer = event.getEntity();
         Player killer = lastdamager.get(killedPlayer);
         EntityDamageEvent kpDamageEvent = killedPlayer.getLastDamageCause();
-        if ((objective != null) && (killer != null) && kpDamageEvent.getCause().equals(DamageCause.VOID) && 
-             killedPlayer.getWorld().getName().equals(SLAPAROO_WORLD_NAME) && gameIsRuning) {
+        if ((objective != null) && (killer != null) && kpDamageEvent.getCause().equals(DamageCause.VOID) &&
+                killedPlayer.getWorld().getName().equals(SLAPAROO_WORLD_NAME) && gameIsRuning) {
             Score score = objective.getScore(killer);
             lastdamager.remove(killedPlayer);
             int newScore = score.getScore() + 1;
@@ -320,9 +327,9 @@ public class Slaparoo extends JavaPlugin
             if (newScore >= WINNER_SCORE) {
                 GameOver(killer);
             }
-            
+
         }
-        
+
     }
 
     public boolean playerJoin(Player pl){
@@ -333,20 +340,20 @@ public class Slaparoo extends JavaPlugin
             } else {
                 pl.sendMessage("Game configuration is wrong. Please contact server admin");
             }
-           console.sendMessage(ChatColor.RED + "World " + SLAPAROO_WORLD_NAME + " does not exist. Check slaparoo config file.");
+            console.sendMessage(ChatColor.RED + "World " + SLAPAROO_WORLD_NAME + " does not exist. Check slaparoo config file.");
         } else {
-            int playerCount = world.getPlayers().size();        
+            int playerCount = world.getPlayers().size();
             if(playerCount < MAX_PLAYER_COUNT && canPlayerJoin) {
-               pl.teleport(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
-               return true;
-           } else {
+                pl.teleport(Bukkit.getWorld(SLAPAROO_WORLD_NAME).getSpawnLocation());
+                return true;
+            } else {
                 pl.sendMessage("You can't join, because game is running");
             }
-        }   
+        }
         return false;
     }
-        
-        
+
+
     private void craeteScoreBoard(World world) {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         board = manager.getNewScoreboard();
@@ -358,7 +365,7 @@ public class Slaparoo extends JavaPlugin
             team.addPlayer(pl);
             pl.setScoreboard(board);
             Score score = objective.getScore(pl);
-            score.setScore(0);            
+            score.setScore(0);
         }
     }
 
@@ -371,12 +378,12 @@ public class Slaparoo extends JavaPlugin
             clearEffect(pl);
             pl.getInventory().remove(Material.COOKIE);
             if(world.getPlayers().size() <= 1 && gameIsRuning) {
-                TitleAPI.sendTitle(pl, 1*20, 3*20, 1*20, "Your opponents left the game", "");                
+                TitleAPI.sendTitle(pl, 1*20, 3*20, 1*20, "Your opponents left the game", "");
             } else {
-                TitleAPI.sendTitle(pl, 1*20, 3*20, 1*20, winner.getName() + " IS THE WINNER", "");                
-            }            
+                TitleAPI.sendTitle(pl, 1*20, 3*20, 1*20, winner.getName() + " IS THE WINNER", "");
+            }
             board.resetScores(pl);
-            pl.teleport(Bukkit.getWorld(LOBBY_WORLD_NAME).getSpawnLocation());            
+            pl.teleport(Bukkit.getWorld(LOBBY_WORLD_NAME).getSpawnLocation());
         }
         if(sign != null) {
             sign.setLine(2, " ");
@@ -384,7 +391,7 @@ public class Slaparoo extends JavaPlugin
         }
     }
 
- */   private boolean isLastVersion() {
+/*    private boolean isLastVersion() {
         BufferedReader in = null;
         try {
             URL slaparooPage = new URL("https://dev.bukkit.org/projects/slaparoo");
@@ -394,7 +401,7 @@ public class Slaparoo extends JavaPlugin
             while ((inputLine = in.readLine()) != null) {
                 int verIndex = inputLine.indexOf("(Version:");
                 if (verIndex != -1) {
-                    String version = inputLine.substring(verIndex+10, verIndex+10+3);                    
+                    String version = inputLine.substring(verIndex+10, verIndex+10+3);
                     return version.equals(Bukkit.getServer().getPluginManager().getPlugin("Slaparoo").getDescription().getVersion());
                 }
             }
@@ -409,9 +416,9 @@ public class Slaparoo extends JavaPlugin
             } catch (IOException ex) {
                 LOG.info(ex.toString());
             }
-        }         
-    } 
-    /*
+        }
+    }
+*/
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         World world = Bukkit.getWorld(SLAPAROO_WORLD_NAME);
@@ -426,40 +433,40 @@ public class Slaparoo extends JavaPlugin
 class SlaparooStarter implements Runnable {
     List<Player> players;
     World world;
-    Slaparoo slaparoo;
+    SlaparooArena slaparoo;
     public static int START_COUNTDOWN = 20;
 
 
-    SlaparooStarter(World world, Slaparoo slaparoo, List<Player> players) {
+    SlaparooStarter(World world, SlaparooArena slaparoo, List<Player> players) {
         this.slaparoo = slaparoo;
         this.world = world;
         this.players = players;
     }
-    
+
     @Override
     @SuppressWarnings("SleepWhileInLoop")
     public void run() {
         Slaparoo.LOG.info("RUN");
         try {
-          int pocetHrajicichHracu = world.getPlayers().size();
-          for(int i = 0; i<START_COUNTDOWN; i++) {
-            sleep(1000);
-            if(pocetHrajicichHracu < Slaparoo.MIN_PLAYER_COUNT) {
-                return;
-            }    
-            if(i%5 == 0 || i > (START_COUNTDOWN-5)) {
-                for (Player pl:world.getPlayers()) {
-                    TitleAPI.sendTitle(pl, 10, 20, 10, START_COUNTDOWN-i + "", "");
-                    pl.sendMessage("Slaparoo starts in " + (START_COUNTDOWN-i));
+            int pocetHrajicichHracu = world.getPlayers().size();
+            for(int i = 0; i<START_COUNTDOWN; i++) {
+                sleep(1000);
+                if(pocetHrajicichHracu < Slaparoo.MIN_PLAYER_COUNT) {
+                    return;
                 }
-            }
+                if(i%5 == 0 || i > (START_COUNTDOWN-5)) {
+                    for (Player pl:world.getPlayers()) {
+                        TitleAPI.sendTitle(pl, 10, 20, 10, START_COUNTDOWN-i + "", "");
+                        pl.sendMessage("Slaparoo starts in " + (START_COUNTDOWN-i));
+                    }
+                }
 
-          }
-          slaparoo.gameStart(world);
+            }
+            slaparoo.gameStart(world);
         } catch (InterruptedException e) {
-          // doresit !!!  
+            // doresit !!!
         }
     }
 
- */
+
 }
