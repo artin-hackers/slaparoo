@@ -2,7 +2,7 @@
 
 ## Tasks:
 
-- [ ] In-game message that config is wrong
+- [x] In-game message that config is wrong
 - [x] Indestructible arena (OPs can destroy the arena now)
 - [x] No need for food (disable hunger)
 - [ ] Support for more arenas (multiple worlds)
